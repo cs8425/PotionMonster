@@ -14,8 +14,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Skeleton;
-import org.bukkit.entity.Skeleton.SkeletonType;
+//import org.bukkit.entity.Skeleton;
+//import org.bukkit.entity.WitherSkeleton;
+//import org.bukkit.entity.Skeleton.SkeletonType;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -27,6 +28,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.util.Vector;
 
 public class P extends JavaPlugin implements Listener
 {
@@ -145,6 +147,8 @@ public class P extends JavaPlugin implements Listener
 			return "CREEPER";
 		case SKELETON: 
 			return "SKELETON";
+		case WITHER_SKELETON:
+			return "WITHER_SKELETON";
 		case SPIDER: 
 			return "SPIDER";
 		case CAVE_SPIDER: 
@@ -183,19 +187,20 @@ public class P extends JavaPlugin implements Listener
 		return null;
 	}
   
-	public void transType(LivingEntity ent, EntityType et, byte type) {
+	LivingEntity transType(LivingEntity ent, EntityType et, byte type) {
 		boolean val = false;
 		if (type == 'T') { // toggle
 			switch (et) {
-			case ZOMBIE: 
-			case PIG_ZOMBIE: 
+			case ZOMBIE:
+			case PIG_ZOMBIE:
 				val = !((Zombie)ent).isBaby();
 				break;
-			case CREEPER: 
+			case CREEPER:
 				val = !((Creeper)ent).isPowered();
 				break;
-			case SKELETON: 
-				val = ((Skeleton)ent).getSkeletonType() == Skeleton.SkeletonType.NORMAL;
+			case SKELETON:
+			case WITHER_SKELETON:
+				val = true;
 				break;
 			}
 		} else if (type == '1') { // force change
@@ -203,21 +208,37 @@ public class P extends JavaPlugin implements Listener
 		} else if (type == '0') { // force cancel
 			val = false;
 		} else {
-			return;
+			return ent;
 		}
 
 		switch (et) {
-		case ZOMBIE: 
-		case PIG_ZOMBIE: 
+		case ZOMBIE:
+		case PIG_ZOMBIE:
 			((Zombie)ent).setBaby(val);
 			break;
-		case CREEPER: 
+		case CREEPER:
 			((Creeper)ent).setPowered(val);
 			break;
-		case SKELETON: 
-			((Skeleton)ent).setSkeletonType(val ? Skeleton.SkeletonType.WITHER : Skeleton.SkeletonType.NORMAL);
+		case SKELETON:
+			if(val) {
+				final Vector vel = ent.getVelocity();
+				final World ww = ent.getWorld();
+				ent.remove​();
+				ent = ww.spawn(ent.getLocation(), org.bukkit.entity.WitherSkeleton.class);
+				ent.setVelocity(vel);
+			}
+			break;
+		case WITHER_SKELETON:
+			if(val) {
+				final Vector vel = ent.getVelocity();
+				final World ww = ent.getWorld();
+				ent.remove​();
+				ent = ww.spawn(ent.getLocation(), org.bukkit.entity.Skeleton.class);
+				ent.setVelocity(vel);
+			}
 			break;
 		}
+		return ent;
 	}
   
 	@EventHandler
@@ -232,7 +253,7 @@ public class P extends JavaPlugin implements Listener
 				for (effect conf : efflist) {
 					i += conf.P;
 					if (i > selected) {
-						transType(ent, e.getEntityType(), conf.type);
+						ent = transType(ent, e.getEntityType(), conf.type);
 						List<PotionEffect> toAdd = conf.eff;
 						for (PotionEffect fx : toAdd) {
 							ent.addPotionEffect(fx);
@@ -251,10 +272,12 @@ public class P extends JavaPlugin implements Listener
 			Integer p = (Integer)this.respawn.get(mob);
 			if ((p != null) && (p.intValue() > this.random.nextInt(10000))) {
 				final LivingEntity ent = e.getEntity();
+				final Vector vel = ent.getVelocity();
 
 				pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
 					public void run() {
-						ent.getWorld().spawn(ent.getLocation(), ent.getClass());
+						LivingEntity enty = ent.getWorld().spawn(ent.getLocation(), ent.getClass());
+						enty.setVelocity(vel);
 					}
 				}, 12L);
 			}
