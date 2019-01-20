@@ -1,0 +1,7 @@
+name: PotionMonster
+version: 1.1.0
+main: com.gmail.mexp0624.PotionMonster.P
+description: A plugin that add PotionEffect to Mobs
+author: thatguy
+
+
