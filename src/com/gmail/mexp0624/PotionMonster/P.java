@@ -1,9 +1,9 @@
 package com.gmail.mexp0624.PotionMonster;
 
 import java.io.File;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -11,9 +11,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Creeper;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
+import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -26,6 +29,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
+import org.bukkit.metadata.FixedMetadataValue;
 
 public class P extends JavaPlugin implements Listener
 {
@@ -35,17 +41,29 @@ public class P extends JavaPlugin implements Listener
 	HashMap<EntityType, List<effect>> affect = new HashMap();
 	HashMap<EntityType, Integer> respawn = new HashMap();
 
+//	List<TargetChan> track = new ArrayList(); // wait for setable AI
+	ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); // wait for setable AI
+	//ConcurrentHashMap<Entity, TargetChan> trackCarrier = new ConcurrentHashMap(); // wait for setable AI
+
 	public void onEnable() {
 		pl = this;
 		Bukkit.getPluginManager().registerEvents(this, this);
 
 		loadConfig();
+
+		/*Bukkit.getServer().getScheduler().runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				updateTarget();
+			}
+		}, 20, 10);*/
 	}
 
 	public void onDisable() {
 		HandlerList.unregisterAll((org.bukkit.plugin.java.JavaPlugin)pl);
 		this.affect.clear();
 		this.respawn.clear();
+		this.track.clear();
 	}
 
 	public void loadConfig() {
@@ -89,6 +107,7 @@ public class P extends JavaPlugin implements Listener
 			try {
 				boolean show = false;
 				byte type = 'X';
+				boolean fly = false;
 				if (effs[0].contains("/")) {
 					String[] types = effs[0].split("/");
 					if (types.length == 2) {
@@ -101,6 +120,9 @@ public class P extends JavaPlugin implements Listener
 						} else if (types[1].contains("X")) { // don't care
 							type = 'X';
 						}
+						if (types[1].contains("F")) { // fly
+							fly = true;
+						}
 						effs[0] = types[0];
 						if (types[1].contains("@")) { // show Potion Effect
 							System.out.println("[eff][" + (char)type + "]@P: " + effs[0] + "/10000");
@@ -112,7 +134,7 @@ public class P extends JavaPlugin implements Listener
 				} else {
 					System.out.println("[eff][X]_P: " + effs[0] + "/10000");
 				}
-				out = new effect(Short.parseShort(effs[0]), type);
+				out = new effect(Short.parseShort(effs[0]), type, fly);
 				String[] parms = effs[1].split(";");
 				String[] arrayOfString1;
 				int j = (arrayOfString1 = parms).length;
@@ -134,19 +156,27 @@ public class P extends JavaPlugin implements Listener
 		return out;
 	}
 
-	LivingEntity transType(LivingEntity ent, EntityType et, byte type) {
+	LivingEntity transType(LivingEntity ent, EntityType et, byte type, boolean fly) {
 		boolean val = false;
 		if (type == 'T') { // toggle
 			switch (et) {
 			case ZOMBIE:
-			case PIG_ZOMBIE:
-				val = !((Zombie)ent).isBaby();
+			case DROWNED:
+			case HUSK:
+			case ZOMBIFIED_PIGLIN:
+			case PIGLIN:
+			case PIGLIN_BRUTE:
+			//case HOGLIN:
+			//case ZOGLIN:
+				val = ((Ageable)ent).isAdult();
 				break;
 			case CREEPER:
 				val = !((Creeper)ent).isPowered();
 				break;
 			case SKELETON:
 			case WITHER_SKELETON:
+			case GUARDIAN:
+			case ELDER_GUARDIAN:
 				val = true;
 				break;
 			}
@@ -155,37 +185,72 @@ public class P extends JavaPlugin implements Listener
 		} else if (type == '0') { // force cancel
 			val = false;
 		} else {
+			if(fly) this.setFly(ent);
 			return ent;
 		}
 
 		switch (et) {
 		case ZOMBIE:
-		case PIG_ZOMBIE:
-			((Zombie)ent).setBaby(val);
+		case DROWNED:
+		case HUSK:
+		case ZOMBIFIED_PIGLIN:
+		case PIGLIN:
+		case PIGLIN_BRUTE:
+			if (val) {
+				((Ageable)ent).setBaby();
+			} else {
+				((Ageable)ent).setAdult();
+			}
+			if (fly) this.setFly(ent);
 			break;
 		case CREEPER:
 			((Creeper)ent).setPowered(val);
 			break;
 		case SKELETON:
-			if(val) {
-				final Vector vel = ent.getVelocity();
-				final World ww = ent.getWorld();
-				ent.remove​();
-				ent = ww.spawn(ent.getLocation(), org.bukkit.entity.WitherSkeleton.class);
-				ent.setVelocity(vel);
-			}
+			if(val) this.Respawn(ent, EntityType.WITHER_SKELETON, fly);
 			break;
 		case WITHER_SKELETON:
-			if(val) {
-				final Vector vel = ent.getVelocity();
-				final World ww = ent.getWorld();
-				ent.remove​();
-				ent = ww.spawn(ent.getLocation(), org.bukkit.entity.Skeleton.class);
-				ent.setVelocity(vel);
-			}
+			if(val) this.Respawn(ent, EntityType.SKELETON, fly);
 			break;
+		case GUARDIAN:
+			if(val) this.Respawn(ent, EntityType.ELDER_GUARDIAN, fly);
+			break;
+		case ELDER_GUARDIAN:
+			if(val) this.Respawn(ent, EntityType.GUARDIAN, fly);
+			break;
+		default:
+			if(fly) this.setFly(ent);
 		}
 		return ent;
+	}
+
+	public void Respawn(LivingEntity ent, EntityType newType, boolean fly) {
+		final Vector vel = ent.getVelocity();
+		final World ww = ent.getWorld();
+		ent.remove();
+		LivingEntity ent2 = (LivingEntity) ww.spawnEntity(ent.getLocation(), newType);
+		ent2.setVelocity(vel);
+		if (fly) {
+			setFly(ent2);
+		}
+	}
+
+	public void setFly(LivingEntity ent) {
+		final Vector vel = ent.getVelocity();
+		final World ww = ent.getWorld();
+		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BAT);
+		Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BEE);
+		//bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
+		bat.setVelocity(vel);
+		bat.addPassenger(ent);
+		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 5, false, false));
+		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 10, false, false));
+		bat.setTarget(((Mob)ent).getTarget());
+		bat.setMetadata("Carrier", new FixedMetadataValue(this, 1));
+
+		//this.track.add(new TargetChan((Mob)bat, (Mob)ent));
+		this.track.put(ent, new TargetChan((Mob)bat, (Mob)ent));
+		//this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
 	}
 
 	@EventHandler
@@ -200,7 +265,7 @@ public class P extends JavaPlugin implements Listener
 				for (effect conf : efflist) {
 					i += conf.P;
 					if (i > selected) {
-						ent = transType(ent, e.getEntityType(), conf.type);
+						ent = transType(ent, e.getEntityType(), conf.type, conf.fly);
 						List<PotionEffect> toAdd = conf.eff;
 						for (PotionEffect fx : toAdd) {
 							ent.addPotionEffect(fx);
@@ -231,19 +296,73 @@ public class P extends JavaPlugin implements Listener
 		}
 	}
 
+	@EventHandler
+	public void onEntityRemoveFromWorld(EntityRemoveFromWorldEvent e) {
+		Entity ent = e.getEntity();
+		TargetChan tchan = this.track.get(ent);
+		if (tchan != null) {
+			tchan.Carrier.remove();
+			this.track.remove(ent);
+		}
+		//this.trackCarrier.remove(ent);
+	}
+	@EventHandler
+	public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
+		Entity ent = e.getEntity();
+		TargetChan tchan = this.track.get(ent);
+		if (tchan != null) {
+			tchan.update();
+		}
+
+		if (ent.hasMetadata("Carrier")) {
+			e.setCancelled(true);
+		}
+
+		//tchan = this.trackCarrier.get(ent);
+		//if (tchan != null) {
+		//	e.setCancelled(true);
+		//}
+	}
+	/*public void updateTarget() {
+		this.track.forEach((ent, tchan) -> {
+			if (tchan == null) {
+				return;
+			}
+			tchan.update();
+		});
+	}*/
+
+
 	static class effect {
 		public final short P;
 		public final List<PotionEffect> eff;
 		public final byte type;
+		public final boolean fly;
 
-		effect(short P, byte type) {
+		effect(short P, byte type, boolean fly) {
 			this.P = P;
 			this.type = type;
+			this.fly = fly;
 			this.eff = new ArrayList();
 		}
 
 		public void add(PotionEffect ef) {
 			this.eff.add(ef);
+		}
+	}
+
+	static class TargetChan {
+		public final Mob Carrier;
+		public final Mob Passenger;
+
+		TargetChan(Mob carrier, Mob passenger) {
+			this.Carrier = carrier;
+			this.Passenger = passenger;
+		}
+
+		public void update() {
+			LivingEntity target = this.Passenger.getTarget();
+			this.Carrier.setTarget(target);
 		}
 	}
 }
