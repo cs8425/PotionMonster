@@ -29,6 +29,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -307,7 +308,8 @@ public class P extends JavaPlugin implements Listener
 		//this.trackCarrier.remove(ent);
 	}
 	@EventHandler
-	public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
+	//public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
+	public void onEntityTargetEvent(EntityTargetEvent e) {
 		Entity ent = e.getEntity();
 		TargetChan tchan = this.track.get(ent);
 		if (tchan != null) {
@@ -318,10 +320,11 @@ public class P extends JavaPlugin implements Listener
 			e.setCancelled(true);
 		}
 
-		//tchan = this.trackCarrier.get(ent);
-		//if (tchan != null) {
-		//	e.setCancelled(true);
-		//}
+		/*tchan = this.trackCarrier.get(ent);
+		if (tchan != null) {
+			//e.setCancelled(true);
+			tchan.reset();
+		}*/
 	}
 	/*public void updateTarget() {
 		this.track.forEach((ent, tchan) -> {
@@ -354,6 +357,7 @@ public class P extends JavaPlugin implements Listener
 	static class TargetChan {
 		public final Mob Carrier;
 		public final Mob Passenger;
+		public LivingEntity Target;
 
 		TargetChan(Mob carrier, Mob passenger) {
 			this.Carrier = carrier;
@@ -361,8 +365,11 @@ public class P extends JavaPlugin implements Listener
 		}
 
 		public void update() {
-			LivingEntity target = this.Passenger.getTarget();
-			this.Carrier.setTarget(target);
+			this.Target = this.Passenger.getTarget();
+			this.Carrier.setTarget(this.Target);
+		}
+		public void reset() {
+			this.Carrier.setTarget(this.Target);
 		}
 	}
 }
