@@ -23,6 +23,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -246,8 +247,10 @@ public class P extends JavaPlugin implements Listener
 		bat.addPassenger(ent);
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 5, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 10, false, false));
+		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("FIRE_RESISTANCE"), Integer.MAX_VALUE, 0, false, false));
+		// TODO: other buff
 		bat.setTarget(((Mob)ent).getTarget());
-		bat.setMetadata("Carrier", new FixedMetadataValue(this, 1));
+		bat.setMetadata("PotionMonster-Carrier", new FixedMetadataValue(this, 1));
 
 		//this.track.add(new TargetChan((Mob)bat, (Mob)ent));
 		this.track.put(ent, new TargetChan((Mob)bat, (Mob)ent));
@@ -267,6 +270,7 @@ public class P extends JavaPlugin implements Listener
 					i += conf.P;
 					if (i > selected) {
 						ent = transType(ent, e.getEntityType(), conf.type, conf.fly);
+						ent.setMetadata("PotionMonster-buff", new FixedMetadataValue(this, selected));
 						List<PotionEffect> toAdd = conf.eff;
 						for (PotionEffect fx : toAdd) {
 							ent.addPotionEffect(fx);
@@ -298,6 +302,30 @@ public class P extends JavaPlugin implements Listener
 	}
 
 	@EventHandler
+	public void onEntityExplode(EntityExplodeEvent event) {
+//		Location l = event.getLocation();
+//		World world = l.getWorld();
+		Entity ent = event.getEntity();
+
+		if (ent instanceof Creeper) {
+			LivingEntity lent = (LivingEntity) ent;
+			if (lent.hasMetadata("PotionMonster-buff")) {
+				removePotionEffect(lent);
+			}
+		} else {
+			// unhandled entity
+			//event.setCancelled(true);
+			return;
+		}
+	}
+
+	public void removePotionEffect(LivingEntity ent) {
+		for (PotionEffect fx : ent.getActivePotionEffects()) {
+			ent.removePotionEffect(fx.getType());
+		}
+	}
+
+	@EventHandler
 	public void onEntityRemoveFromWorld(EntityRemoveFromWorldEvent e) {
 		Entity ent = e.getEntity();
 		TargetChan tchan = this.track.get(ent);
@@ -316,7 +344,7 @@ public class P extends JavaPlugin implements Listener
 			tchan.update();
 		}
 
-		if (ent.hasMetadata("Carrier")) {
+		if (ent.hasMetadata("PotionMonster-Carrier")) {
 			e.setCancelled(true);
 		}
 
