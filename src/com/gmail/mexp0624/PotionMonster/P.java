@@ -17,7 +17,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Creeper;
-import org.bukkit.entity.Zombie;
+import org.bukkit.entity.Bee;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
@@ -242,17 +242,20 @@ public class P extends JavaPlugin implements Listener
 		final World ww = ent.getWorld();
 		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BAT);
 		Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BEE);
+		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PARROT);
+		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PHANTOM);
+		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.VEX);
 		//bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
 		bat.setVelocity(vel);
 		bat.addPassenger(ent);
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 5, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 10, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("FIRE_RESISTANCE"), Integer.MAX_VALUE, 0, false, false));
+		//bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("SPEED"), Integer.MAX_VALUE, 5, false, false));
 		// TODO: other buff
 		bat.setTarget(((Mob)ent).getTarget());
 		bat.setMetadata("PotionMonster-Carrier", new FixedMetadataValue(this, 1));
 
-		//this.track.add(new TargetChan((Mob)bat, (Mob)ent));
 		this.track.put(ent, new TargetChan((Mob)bat, (Mob)ent));
 		//this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
 	}
@@ -328,6 +331,13 @@ public class P extends JavaPlugin implements Listener
 	@EventHandler
 	public void onEntityRemoveFromWorld(EntityRemoveFromWorldEvent e) {
 		Entity ent = e.getEntity();
+		/*Entity carrier = ent.getVehicle();
+		if (carrier != null) {
+//getLogger().info("[EntityRemoveFromWorldEvent]: " + e.toString() + " " + carrier.toString());
+			if (carrier instanceof Bee) {
+				carrier.remove();
+			}
+		}*/
 		TargetChan tchan = this.track.get(ent);
 		if (tchan != null) {
 			tchan.Carrier.remove();
@@ -339,6 +349,14 @@ public class P extends JavaPlugin implements Listener
 	//public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
 	public void onEntityTargetEvent(EntityTargetEvent e) {
 		Entity ent = e.getEntity();
+		/*Entity carrier = ent.getVehicle();
+		if (carrier != null) {
+//getLogger().info("[EntityTargetEvent]: " + e.toString() + " " + carrier.toString());
+			if (carrier instanceof Bee) {
+				LivingEntity target = ((Mob) ent).getTarget();
+				((Mob) carrier).setTarget(target);
+			}
+		}*/
 		TargetChan tchan = this.track.get(ent);
 		if (tchan != null) {
 			tchan.update();
