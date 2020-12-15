@@ -357,12 +357,17 @@ public class P extends JavaPlugin implements Listener
 				((Mob) carrier).setTarget(target);
 			}
 		}*/
-		TargetChan tchan = this.track.get(ent);
-		if (tchan != null) {
-			tchan.update();
-		}
+		//TargetChan tchan = this.track.get(ent);
+		//if (tchan != null) {
+		//	tchan.update();
+		//}
 
 		if (ent.hasMetadata("PotionMonster-Carrier")) {
+			if (ent instanceof Bee) {
+				Bee bee = (Bee) ent;
+				bee.setAnger(0);
+				bee.setHasNectar(true);
+			}
 			e.setCancelled(true);
 		}
 
@@ -380,7 +385,6 @@ public class P extends JavaPlugin implements Listener
 			tchan.update();
 		});
 	}*/
-
 
 	static class effect {
 		public final short P;
