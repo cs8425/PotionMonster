@@ -10,6 +10,9 @@ import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Entity;
@@ -66,6 +69,37 @@ public class P extends JavaPlugin implements Listener
 		this.affect.clear();
 		this.respawn.clear();
 		this.track.clear();
+	}
+
+	// command
+	@Override
+	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+		List<String> toreturn = new ArrayList<String>();
+		if(!sender.hasPermission("potionmon.reload")){
+			return toreturn; // no permission, return empty
+		}
+
+		if (args.length == 1){
+			toreturn.add("reload");
+		}
+		return toreturn;
+	}
+	@Override
+	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+		if(!sender.hasPermission("potionmon.reload")){
+			return true; // no permission
+		}
+		if(args.length == 1){
+			if (args[0].equalsIgnoreCase("reload")) {
+				this.onDisable();
+				this.onEnable();
+				sender.sendMessage(ChatColor.GOLD + "[PotionMonster]" + ChatColor.WHITE + " reloaded !");
+				return true;
+			}
+			sender.sendMessage("There is no " + ChatColor.GOLD + args[0] + " command!");
+			return true;
+		}
+		return false;
 	}
 
 	public void loadConfig() {

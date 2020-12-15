@@ -5,4 +5,14 @@ api-version: 1.13
 description: ${project.description}
 author: thatguy
 
+commands:
+  potionmon:
+    description: "reload config"
+    permission: potionmon.reload
+    usage: "/potionmon reload"
+
+permissions:
+  potionmon.reload:
+    description: Gives access to reload command
+    default: op
 
