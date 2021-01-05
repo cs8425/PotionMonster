@@ -1,18 +1,21 @@
 package com.gmail.mexp0624.PotionMonster;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Entity;
@@ -55,6 +58,7 @@ public class P extends JavaPlugin implements Listener
 		Bukkit.getPluginManager().registerEvents(this, this);
 
 		loadConfig();
+		readFlyer();
 
 		/*Bukkit.getServer().getScheduler().runTaskTimer(this, new Runnable() {
 			@Override
@@ -68,6 +72,8 @@ public class P extends JavaPlugin implements Listener
 		HandlerList.unregisterAll((org.bukkit.plugin.java.JavaPlugin)pl);
 		this.affect.clear();
 		this.respawn.clear();
+
+		saveFlyer(); // save first
 		this.track.clear();
 	}
 
@@ -100,6 +106,63 @@ public class P extends JavaPlugin implements Listener
 			return true;
 		}
 		return false;
+	}
+
+
+	public void saveFlyer() {
+		File cacheFd = new File(getDataFolder(), "cache.yml");
+		YamlConfiguration list = new YamlConfiguration();
+
+		List<String> outlist = new ArrayList<>();
+		this.track.forEach((ent, tchan) -> {
+			if (tchan == null) {
+				return;
+			}
+
+			final Mob carrier = tchan.Carrier;
+			final Mob passenger = tchan.Passenger;
+			if (carrier == null) {
+				return;
+			}
+			if (passenger == null) {
+				return;
+			}
+			outlist.add(String.format("%s:%s", carrier.getUniqueId(), passenger.getUniqueId()));
+		});
+		list.set("UUID", outlist);
+
+		try{
+			list.save(cacheFd);
+		}catch(IOException e){
+			e.printStackTrace();
+		}
+	}
+	public void readFlyer() {
+		File cacheFd = new File(getDataFolder(), "cache.yml");
+		if (!cacheFd.exists()) {
+			return;
+		}
+		YamlConfiguration list = YamlConfiguration.loadConfiguration(cacheFd);
+		List<String> uuidList = list.getStringList("UUID");
+
+		Server server = Bukkit.getServer();
+
+		for (String argv : uuidList) {
+			String[] args = argv.split(":");
+			if (args.length != 2) continue;
+
+			UUID carrierUUID = UUID.fromString(args[0]);
+			UUID passengerUUID = UUID.fromString(args[1]);
+			final LivingEntity carrier = (LivingEntity)server.getEntity(carrierUUID);
+			final LivingEntity passenger = (LivingEntity)server.getEntity(passengerUUID);
+			if (carrier == null) {
+				continue;
+			}
+			if (passenger == null) {
+				continue;
+			}
+			this.track.put(passenger, new TargetChan((Mob)carrier, (Mob)passenger));
+		}
 	}
 
 	public void loadConfig() {
@@ -282,8 +345,9 @@ public class P extends JavaPlugin implements Listener
 		//bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
 		bat.setVelocity(vel);
 		bat.addPassenger(ent);
-		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 5, false, false));
-		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 10, false, false));
+		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 1, false, false));
+		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 5, false, false));
+		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEAL"), Integer.MAX_VALUE, 5, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("FIRE_RESISTANCE"), Integer.MAX_VALUE, 0, false, false));
 		//bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("SPEED"), Integer.MAX_VALUE, 5, false, false));
 		// TODO: other buff
