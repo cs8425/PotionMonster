@@ -46,8 +46,8 @@ public class P extends JavaPlugin implements Listener
 	public static P pl;
 	FileConfiguration config;
 	Random random = new Random();
-	HashMap<EntityType, List<effect>> affect = new HashMap();
-	HashMap<EntityType, Integer> respawn = new HashMap();
+	ConcurrentHashMap<EntityType, List<effect>> affect = new ConcurrentHashMap();
+	ConcurrentHashMap<EntityType, Integer> respawn = new ConcurrentHashMap();
 
 //	List<TargetChan> track = new ArrayList(); // wait for setable AI
 	ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); // wait for setable AI
@@ -438,7 +438,12 @@ public class P extends JavaPlugin implements Listener
 		}*/
 		TargetChan tchan = this.track.get(ent);
 		if (tchan != null) {
-			tchan.Carrier.remove();
+			//tchan.Carrier.remove(); // this cause java.util.ConcurrentModificationException
+			pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
+				public void run() {
+					tchan.Carrier.remove();
+				}
+			}, 4L);
 			this.track.remove(ent);
 		}
 		//this.trackCarrier.remove(ent);
