@@ -21,6 +21,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Bee;
@@ -119,8 +120,8 @@ public class P extends JavaPlugin implements Listener
 				return;
 			}
 
-			final Mob carrier = tchan.Carrier;
-			final Mob passenger = tchan.Passenger;
+			final LivingEntity carrier = tchan.Carrier;
+			final LivingEntity passenger = tchan.Passenger;
 			if (carrier == null) {
 				return;
 			}
@@ -161,7 +162,7 @@ public class P extends JavaPlugin implements Listener
 			if (passenger == null) {
 				continue;
 			}
-			this.track.put(passenger, new TargetChan((Mob)carrier, (Mob)passenger));
+			this.track.put(passenger, new TargetChan((LivingEntity)carrier, (LivingEntity)passenger));
 		}
 	}
 
@@ -344,17 +345,23 @@ public class P extends JavaPlugin implements Listener
 		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.VEX);
 		//bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
 		bat.setVelocity(vel);
-		bat.addPassenger(ent);
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 1, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 5, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEAL"), Integer.MAX_VALUE, 5, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("FIRE_RESISTANCE"), Integer.MAX_VALUE, 0, false, false));
 		//bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("SPEED"), Integer.MAX_VALUE, 5, false, false));
 		// TODO: other buff
-		bat.setTarget(((Mob)ent).getTarget());
 		bat.setMetadata("PotionMonster-Carrier", new FixedMetadataValue(this, 1));
 
-		this.track.put(ent, new TargetChan((Mob)bat, (Mob)ent));
+		// TODO: NOT RemoveWhenFarAway option
+		// if (ent instanceof Monster) {
+		// 	bat.setRemoveWhenFarAway(true);
+		// }
+		bat.setRemoveWhenFarAway(ent.getRemoveWhenFarAway());
+		bat.addPassenger(ent);
+		bat.setTarget(((Mob)ent).getTarget());
+
+		this.track.put(ent, new TargetChan((LivingEntity)bat, (LivingEntity)ent));
 		//this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
 	}
 
@@ -508,22 +515,22 @@ public class P extends JavaPlugin implements Listener
 	}
 
 	static class TargetChan {
-		public final Mob Carrier;
-		public final Mob Passenger;
+		public final LivingEntity Carrier;
+		public final LivingEntity Passenger;
 		public LivingEntity Target;
 
-		TargetChan(Mob carrier, Mob passenger) {
+		TargetChan(LivingEntity carrier, LivingEntity passenger) {
 			this.Carrier = carrier;
 			this.Passenger = passenger;
 		}
 
-		public void update() {
+		/*public void update() {
 			this.Target = this.Passenger.getTarget();
 			this.Carrier.setTarget(this.Target);
 		}
 		public void reset() {
 			this.Carrier.setTarget(this.Target);
-		}
+		}*/
 	}
 }
 
