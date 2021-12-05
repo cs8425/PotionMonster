@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.UUID;
 import org.bukkit.Bukkit;
@@ -46,6 +47,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 public class P extends JavaPlugin implements Listener
 {
 	public static P pl;
+	Logger logger = getLogger();
 	FileConfiguration config;
 	Random random = new Random();
 	ConcurrentHashMap<EntityType, List<effect>> affect = new ConcurrentHashMap();
@@ -190,7 +192,7 @@ public class P extends JavaPlugin implements Listener
 		for (int i = 0; i < j; i++) {
 			EntityType ent = arrayOfEntityType[i];
 			String mob = ent.name();
-			System.out.println("[addType]: " + mob);
+			logger.log(Level.INFO, "[addType]: " + mob);
 			this.affect.put(ent, parseList(mob));
 			this.respawn.put(ent, Integer.valueOf(this.config.getInt(mob + ".respawn", 0)));
 		}
@@ -234,14 +236,14 @@ public class P extends JavaPlugin implements Listener
 						}
 						effs[0] = types[0];
 						if (types[1].contains("@")) { // show Potion Effect
-							System.out.println("[eff][" + (char)type + "]@P: " + effs[0] + "/10000");
+							logger.log(Level.INFO, "[eff][" + (char)type + "]@P: " + effs[0] + "/10000");
 							show = true;
 						} else {
-							System.out.println("[eff][" + (char)type + "]_P: " + effs[0] + "/10000");
+							logger.log(Level.INFO, "[eff][" + (char)type + "]_P: " + effs[0] + "/10000");
 						}
 					}
 				} else {
-					System.out.println("[eff][X]_P: " + effs[0] + "/10000");
+					logger.log(Level.INFO, "[eff][X]_P: " + effs[0] + "/10000");
 				}
 				out = new effect(Short.parseShort(effs[0]), type, fly);
 				String[] parms = effs[1].split(";");
@@ -252,7 +254,7 @@ public class P extends JavaPlugin implements Listener
 					String[] eff = parm.split(",");
 					if (eff.length == 2) {
 						try {
-							System.out.println("[eff] " + eff[0] + " @ " + eff[1]);
+							logger.log(Level.INFO, "[eff] " + eff[0] + " @ " + eff[1]);
 
 							out.add(new PotionEffect(PotionEffectType.getByName(eff[0].toUpperCase()), Integer.MAX_VALUE, Integer.valueOf(eff[1]).intValue(), show, show));
 						}
