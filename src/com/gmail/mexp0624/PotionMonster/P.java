@@ -39,6 +39,7 @@ import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.spigotmc.event.entity.EntityDismountEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 
@@ -495,6 +496,18 @@ public class P extends JavaPlugin implements Listener
 			tchan.update();
 		});
 	}*/
+
+	@EventHandler
+	public void onEntityDismountEvent(EntityDismountEvent e) {
+		Entity ent = e.getEntity();
+		Entity entDe = e.getDismounted();
+		if (ent.hasMetadata("PotionMonster-Carrier")) {
+			e.setCancelled(true);
+		}
+		if (entDe.hasMetadata("PotionMonster-Carrier")) {
+			e.setCancelled(true);
+		}
+	}
 
 	static class effect {
 		public final short P;
