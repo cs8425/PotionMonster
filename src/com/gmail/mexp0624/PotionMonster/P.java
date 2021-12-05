@@ -51,9 +51,10 @@ public class P extends JavaPlugin implements Listener
 	ConcurrentHashMap<EntityType, List<effect>> affect = new ConcurrentHashMap();
 	ConcurrentHashMap<EntityType, Integer> respawn = new ConcurrentHashMap();
 
-//	List<TargetChan> track = new ArrayList(); // wait for setable AI
-	ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); // wait for setable AI
+	// List<TargetChan> track = new ArrayList(); // wait for setable AI
+	// ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); // wait for setable AI
 	//ConcurrentHashMap<Entity, TargetChan> trackCarrier = new ConcurrentHashMap(); // wait for setable AI
+	ConcurrentHashMap<UUID, UUID> track = new ConcurrentHashMap(); // passengerUUID, carrierUUID
 
 	public void onEnable() {
 		pl = this;
@@ -116,20 +117,26 @@ public class P extends JavaPlugin implements Listener
 		YamlConfiguration list = new YamlConfiguration();
 
 		List<String> outlist = new ArrayList<>();
-		this.track.forEach((ent, tchan) -> {
-			if (tchan == null) {
-				return;
-			}
+		// this.track.forEach((ent, tchan) -> {
+		// 	if (tchan == null) {
+		// 		return;
+		// 	}
 
-			final LivingEntity carrier = tchan.Carrier;
-			final LivingEntity passenger = tchan.Passenger;
-			if (carrier == null) {
+		// 	final LivingEntity carrier = tchan.Carrier;
+		// 	final LivingEntity passenger = tchan.Passenger;
+		// 	if (carrier == null) {
+		// 		return;
+		// 	}
+		// 	if (passenger == null) {
+		// 		return;
+		// 	}
+		// 	outlist.add(String.format("%s:%s", carrier.getUniqueId(), passenger.getUniqueId()));
+		// });
+		this.track.forEach((passengerUUID, carrierUUID) -> {
+			if (carrierUUID == null) {
 				return;
 			}
-			if (passenger == null) {
-				return;
-			}
-			outlist.add(String.format("%s:%s", carrier.getUniqueId(), passenger.getUniqueId()));
+			outlist.add(String.format("%s:%s", passengerUUID, carrierUUID));
 		});
 		list.set("UUID", outlist);
 
@@ -153,17 +160,18 @@ public class P extends JavaPlugin implements Listener
 			String[] args = argv.split(":");
 			if (args.length != 2) continue;
 
-			UUID carrierUUID = UUID.fromString(args[0]);
-			UUID passengerUUID = UUID.fromString(args[1]);
-			final LivingEntity carrier = (LivingEntity)server.getEntity(carrierUUID);
+			UUID passengerUUID = UUID.fromString(args[0]);
+			UUID carrierUUID = UUID.fromString(args[1]);
 			final LivingEntity passenger = (LivingEntity)server.getEntity(passengerUUID);
-			if (carrier == null) {
-				continue;
-			}
+			final LivingEntity carrier = (LivingEntity)server.getEntity(carrierUUID);
 			if (passenger == null) {
 				continue;
 			}
-			this.track.put(passenger, new TargetChan((LivingEntity)carrier, (LivingEntity)passenger));
+			if (carrier == null) {
+				continue;
+			}
+			// this.track.put(passenger, new TargetChan((LivingEntity)carrier, (LivingEntity)passenger));
+			this.track.put(passengerUUID, carrierUUID);
 		}
 	}
 
@@ -362,7 +370,8 @@ public class P extends JavaPlugin implements Listener
 		bat.addPassenger(ent);
 		bat.setTarget(((Mob)ent).getTarget());
 
-		this.track.put(ent, new TargetChan((LivingEntity)bat, (LivingEntity)ent));
+		this.track.put(ent.getUniqueId(), bat.getUniqueId());
+		// this.track.put(ent, new TargetChan((LivingEntity)bat, (LivingEntity)ent));
 		//this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
 	}
 
@@ -437,23 +446,46 @@ public class P extends JavaPlugin implements Listener
 	@EventHandler
 	public void onEntityRemoveFromWorld(EntityRemoveFromWorldEvent e) {
 		Entity ent = e.getEntity();
-		/*Entity carrier = ent.getVehicle();
-		if (carrier != null) {
-//getLogger().info("[EntityRemoveFromWorldEvent]: " + e.toString() + " " + carrier.toString());
-			if (carrier instanceof Bee) {
-				carrier.remove();
-			}
-		}*/
-		TargetChan tchan = this.track.get(ent);
-		if (tchan != null) {
-			//tchan.Carrier.remove(); // this cause java.util.ConcurrentModificationException
+		// Entity carrier = ent.getVehicle();
+		// if (carrier != null) {
+		// 	// getLogger().info("[EntityRemoveFromWorldEvent]: " + e.toString() + " " + carrier.toString());
+		// 	if (carrier.hasMetadata("PotionMonster-Carrier")) {
+		// 		pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
+		// 			public void run() {
+		// 				carrier.remove();
+		// 			}
+		// 		}, 4L);
+		// 	}
+		// 	// if (carrier instanceof Bee) {
+		// 	// 	carrier.remove();
+		// 	// }
+		// }
+		UUID entUUID = ent.getUniqueId();
+		UUID carrierUUID = this.track.get(entUUID);
+		if (carrierUUID != null) {
 			pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
 				public void run() {
-					tchan.Carrier.remove();
+					final Server server = Bukkit.getServer();
+					final LivingEntity carrier = (LivingEntity)server.getEntity(carrierUUID);
+					if (carrier == null) {
+						return;
+					}
+					carrier.remove();
 				}
 			}, 4L);
-			this.track.remove(ent);
+			this.track.remove(entUUID);
 		}
+
+		// TargetChan tchan = this.track.get(ent);
+		// if (tchan != null) {
+		// 	//tchan.Carrier.remove(); // this cause java.util.ConcurrentModificationException
+		// 	pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
+		// 		public void run() {
+		// 			tchan.Carrier.remove();
+		// 		}
+		// 	}, 4L);
+		// 	this.track.remove(ent);
+		// }
 		//this.trackCarrier.remove(ent);
 	}
 	@EventHandler
