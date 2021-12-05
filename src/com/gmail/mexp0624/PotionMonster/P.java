@@ -193,6 +193,7 @@ public class P extends JavaPlugin implements Listener
 			EntityType ent = arrayOfEntityType[i];
 			String mob = ent.name();
 			logger.log(Level.INFO, "[addType]: " + mob);
+			if (!this.config.isConfigurationSection(mob)) continue; // not define, skip
 			this.affect.put(ent, parseList(mob));
 			this.respawn.put(ent, Integer.valueOf(this.config.getInt(mob + ".respawn", 0)));
 		}
