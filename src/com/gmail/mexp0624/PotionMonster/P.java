@@ -51,8 +51,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.persistence.PersistentDataHolder;
 import org.bukkit.persistence.PersistentDataAdapterContext;
 
-public class P extends JavaPlugin implements Listener
-{
+public class P extends JavaPlugin implements Listener {
 	public static P pl;
 	Logger logger = getLogger();
 	FileConfiguration config;
@@ -64,8 +63,10 @@ public class P extends JavaPlugin implements Listener
 	private final Map<String, NamespacedKey> nKey = new HashMap<>();
 
 	// List<TargetChan> track = new ArrayList(); // wait for setable AI
-	// ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); // wait for setable AI
-	//ConcurrentHashMap<Entity, TargetChan> trackCarrier = new ConcurrentHashMap(); // wait for setable AI
+	// ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); //
+	// wait for setable AI
+	// ConcurrentHashMap<Entity, TargetChan> trackCarrier = new ConcurrentHashMap();
+	// // wait for setable AI
 	ConcurrentHashMap<UUID, UUID> track = new ConcurrentHashMap(); // passengerUUID, carrierUUID
 
 	public P() {
@@ -80,16 +81,19 @@ public class P extends JavaPlugin implements Listener
 		loadConfig();
 		// readFlyer();
 
-		/*Bukkit.getServer().getScheduler().runTaskTimer(this, new Runnable() {
-			@Override
-			public void run() {
-				updateTarget();
-			}
-		}, 20, 10);*/
+		/*
+		 * Bukkit.getServer().getScheduler().runTaskTimer(this, new Runnable() {
+		 * 
+		 * @Override
+		 * public void run() {
+		 * updateTarget();
+		 * }
+		 * }, 20, 10);
+		 */
 	}
 
 	public void onDisable() {
-		HandlerList.unregisterAll((org.bukkit.plugin.java.JavaPlugin)pl);
+		HandlerList.unregisterAll((org.bukkit.plugin.java.JavaPlugin) pl);
 		this.affect.clear();
 		this.respawn.clear();
 
@@ -101,21 +105,22 @@ public class P extends JavaPlugin implements Listener
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
 		List<String> toreturn = new ArrayList<String>();
-		if(!sender.hasPermission("potionmon.reload")){
+		if (!sender.hasPermission("potionmon.reload")) {
 			return toreturn; // no permission, return empty
 		}
 
-		if (args.length == 1){
+		if (args.length == 1) {
 			toreturn.add("reload");
 		}
 		return toreturn;
 	}
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-		if(!sender.hasPermission("potionmon.reload")){
+		if (!sender.hasPermission("potionmon.reload")) {
 			return true; // no permission
 		}
-		if(args.length == 1){
+		if (args.length == 1) {
 			if (args[0].equalsIgnoreCase("reload")) {
 				this.onDisable();
 				this.onEnable();
@@ -128,26 +133,26 @@ public class P extends JavaPlugin implements Listener
 		return false;
 	}
 
-
 	public void saveFlyer() {
 		File cacheFd = new File(getDataFolder(), "cache.yml");
 		YamlConfiguration list = new YamlConfiguration();
 
 		List<String> outlist = new ArrayList<>();
 		// this.track.forEach((ent, tchan) -> {
-		// 	if (tchan == null) {
-		// 		return;
-		// 	}
+		// if (tchan == null) {
+		// return;
+		// }
 
-		// 	final LivingEntity carrier = tchan.Carrier;
-		// 	final LivingEntity passenger = tchan.Passenger;
-		// 	if (carrier == null) {
-		// 		return;
-		// 	}
-		// 	if (passenger == null) {
-		// 		return;
-		// 	}
-		// 	outlist.add(String.format("%s:%s", carrier.getUniqueId(), passenger.getUniqueId()));
+		// final LivingEntity carrier = tchan.Carrier;
+		// final LivingEntity passenger = tchan.Passenger;
+		// if (carrier == null) {
+		// return;
+		// }
+		// if (passenger == null) {
+		// return;
+		// }
+		// outlist.add(String.format("%s:%s", carrier.getUniqueId(),
+		// passenger.getUniqueId()));
 		// });
 		this.track.forEach((passengerUUID, carrierUUID) -> {
 			if (carrierUUID == null) {
@@ -157,12 +162,13 @@ public class P extends JavaPlugin implements Listener
 		});
 		list.set("UUID", outlist);
 
-		try{
+		try {
 			list.save(cacheFd);
-		}catch(IOException e){
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+
 	public void readFlyer() {
 		File cacheFd = new File(getDataFolder(), "cache.yml");
 		if (!cacheFd.exists()) {
@@ -175,19 +181,21 @@ public class P extends JavaPlugin implements Listener
 
 		for (String argv : uuidList) {
 			String[] args = argv.split(":");
-			if (args.length != 2) continue;
+			if (args.length != 2)
+				continue;
 
 			UUID passengerUUID = UUID.fromString(args[0]);
 			UUID carrierUUID = UUID.fromString(args[1]);
-			final LivingEntity passenger = (LivingEntity)server.getEntity(passengerUUID);
-			final LivingEntity carrier = (LivingEntity)server.getEntity(carrierUUID);
+			final LivingEntity passenger = (LivingEntity) server.getEntity(passengerUUID);
+			final LivingEntity carrier = (LivingEntity) server.getEntity(carrierUUID);
 			if (passenger == null) {
 				continue;
 			}
 			if (carrier == null) {
 				continue;
 			}
-			// this.track.put(passenger, new TargetChan((LivingEntity)carrier, (LivingEntity)passenger));
+			// this.track.put(passenger, new TargetChan((LivingEntity)carrier,
+			// (LivingEntity)passenger));
 			this.track.put(passengerUUID, carrierUUID);
 		}
 	}
@@ -208,7 +216,8 @@ public class P extends JavaPlugin implements Listener
 			EntityType ent = arrayOfEntityType[i];
 			String mob = ent.name();
 			logger.log(Level.INFO, "[addType]: " + mob);
-			if (!this.config.isConfigurationSection(mob)) continue; // not define, skip
+			if (!this.config.isConfigurationSection(mob))
+				continue; // not define, skip
 			this.affect.put(ent, parseList(mob));
 			this.respawn.put(ent, Integer.valueOf(this.config.getInt(mob + ".respawn", 0)));
 		}
@@ -252,10 +261,10 @@ public class P extends JavaPlugin implements Listener
 						}
 						effs[0] = types[0];
 						if (types[1].contains("@")) { // show Potion Effect
-							logger.log(Level.INFO, "[eff][" + (char)type + "]@P: " + effs[0] + "/10000");
+							logger.log(Level.INFO, "[eff][" + (char) type + "]@P: " + effs[0] + "/10000");
 							show = true;
 						} else {
-							logger.log(Level.INFO, "[eff][" + (char)type + "]_P: " + effs[0] + "/10000");
+							logger.log(Level.INFO, "[eff][" + (char) type + "]_P: " + effs[0] + "/10000");
 						}
 					}
 				} else {
@@ -272,13 +281,14 @@ public class P extends JavaPlugin implements Listener
 						try {
 							logger.log(Level.INFO, "[eff] " + eff[0] + " @ " + eff[1]);
 
-							out.add(new PotionEffect(PotionEffectType.getByName(eff[0].toUpperCase()), Integer.MAX_VALUE, Integer.valueOf(eff[1]).intValue(), show, show));
+							out.add(new PotionEffect(PotionEffectType.getByName(eff[0].toUpperCase()),
+									Integer.MAX_VALUE, Integer.valueOf(eff[1]).intValue(), show, show));
+						} catch (NumberFormatException localNumberFormatException) {
 						}
-						catch (NumberFormatException localNumberFormatException) {}
 					}
 				}
+			} catch (NumberFormatException localNumberFormatException1) {
 			}
-			catch (NumberFormatException localNumberFormatException1) {}
 		}
 		return out;
 	}
@@ -287,66 +297,73 @@ public class P extends JavaPlugin implements Listener
 		boolean val = false;
 		if (type == 'T') { // toggle
 			switch (et) {
-			case ZOMBIE:
-			case DROWNED:
-			case HUSK:
-			case ZOMBIFIED_PIGLIN:
-			case PIGLIN:
-			case PIGLIN_BRUTE:
-			//case HOGLIN:
-			//case ZOGLIN:
-				val = ((Ageable)ent).isAdult();
-				break;
-			case CREEPER:
-				val = !((Creeper)ent).isPowered();
-				break;
-			case SKELETON:
-			case WITHER_SKELETON:
-			case GUARDIAN:
-			case ELDER_GUARDIAN:
-				val = true;
-				break;
+				case ZOMBIE:
+				case DROWNED:
+				case HUSK:
+				case ZOMBIFIED_PIGLIN:
+				case PIGLIN:
+				case PIGLIN_BRUTE:
+					// case HOGLIN:
+					// case ZOGLIN:
+					val = ((Ageable) ent).isAdult();
+					break;
+				case CREEPER:
+					val = !((Creeper) ent).isPowered();
+					break;
+				case SKELETON:
+				case WITHER_SKELETON:
+				case GUARDIAN:
+				case ELDER_GUARDIAN:
+					val = true;
+					break;
 			}
 		} else if (type == '1') { // force change
 			val = true;
 		} else if (type == '0') { // force cancel
 			val = false;
 		} else {
-			if(fly) this.setFly(ent);
+			if (fly)
+				this.setFly(ent);
 			return ent;
 		}
 
 		switch (et) {
-		case ZOMBIE:
-		case DROWNED:
-		case HUSK:
-		case ZOMBIFIED_PIGLIN:
-		case PIGLIN:
-		case PIGLIN_BRUTE:
-			if (val) {
-				((Ageable)ent).setBaby();
-			} else {
-				((Ageable)ent).setAdult();
-			}
-			if (fly) this.setFly(ent);
-			break;
-		case CREEPER:
-			((Creeper)ent).setPowered(val);
-			break;
-		case SKELETON:
-			if(val) this.Respawn(ent, EntityType.WITHER_SKELETON, fly);
-			break;
-		case WITHER_SKELETON:
-			if(val) this.Respawn(ent, EntityType.SKELETON, fly);
-			break;
-		case GUARDIAN:
-			if(val) this.Respawn(ent, EntityType.ELDER_GUARDIAN, fly);
-			break;
-		case ELDER_GUARDIAN:
-			if(val) this.Respawn(ent, EntityType.GUARDIAN, fly);
-			break;
-		default:
-			if(fly) this.setFly(ent);
+			case ZOMBIE:
+			case DROWNED:
+			case HUSK:
+			case ZOMBIFIED_PIGLIN:
+			case PIGLIN:
+			case PIGLIN_BRUTE:
+				if (val) {
+					((Ageable) ent).setBaby();
+				} else {
+					((Ageable) ent).setAdult();
+				}
+				if (fly)
+					this.setFly(ent);
+				break;
+			case CREEPER:
+				((Creeper) ent).setPowered(val);
+				break;
+			case SKELETON:
+				if (val)
+					this.Respawn(ent, EntityType.WITHER_SKELETON, fly);
+				break;
+			case WITHER_SKELETON:
+				if (val)
+					this.Respawn(ent, EntityType.SKELETON, fly);
+				break;
+			case GUARDIAN:
+				if (val)
+					this.Respawn(ent, EntityType.ELDER_GUARDIAN, fly);
+				break;
+			case ELDER_GUARDIAN:
+				if (val)
+					this.Respawn(ent, EntityType.GUARDIAN, fly);
+				break;
+			default:
+				if (fly)
+					this.setFly(ent);
 		}
 		return ent;
 	}
@@ -365,32 +382,37 @@ public class P extends JavaPlugin implements Listener
 	public void setFly(LivingEntity ent) {
 		final Vector vel = ent.getVelocity();
 		final World ww = ent.getWorld();
-		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BAT);
+		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BAT);
 		Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BEE);
-		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PARROT);
-		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PHANTOM);
-		//Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.VEX);
-		//bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
+		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PARROT);
+		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PHANTOM);
+		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.VEX);
+		// bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new
+		// AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
 		bat.setVelocity(vel);
-		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 1, false, false));
-		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 5, false, false));
+		bat.addPotionEffect(
+				new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 1, false, false));
+		bat.addPotionEffect(
+				new PotionEffect(PotionEffectType.getByName("HEALTH_BOOST"), Integer.MAX_VALUE, 5, false, false));
 		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("HEAL"), Integer.MAX_VALUE, 5, false, false));
-		bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("FIRE_RESISTANCE"), Integer.MAX_VALUE, 0, false, false));
-		//bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("SPEED"), Integer.MAX_VALUE, 5, false, false));
+		bat.addPotionEffect(
+				new PotionEffect(PotionEffectType.getByName("FIRE_RESISTANCE"), Integer.MAX_VALUE, 0, false, false));
+		// bat.addPotionEffect(new PotionEffect(PotionEffectType.getByName("SPEED"),
+		// Integer.MAX_VALUE, 5, false, false));
 		// TODO: other buff
 		bat.setMetadata("PotionMonster-Carrier", new FixedMetadataValue(this, 1));
 
 		// TODO: NOT RemoveWhenFarAway option
 		// if (ent instanceof Monster) {
-		// 	bat.setRemoveWhenFarAway(true);
+		// bat.setRemoveWhenFarAway(true);
 		// }
 		bat.setRemoveWhenFarAway(ent.getRemoveWhenFarAway());
 		bat.addPassenger(ent);
-		bat.setTarget(((Mob)ent).getTarget());
+		bat.setTarget(((Mob) ent).getTarget());
 
 		// this.track.put(ent.getUniqueId(), bat.getUniqueId());
 		// this.track.put(ent, new TargetChan((LivingEntity)bat, (LivingEntity)ent));
-		//this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
+		// this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
 
 		// bind two-way
 		setCarrier(bat, ent);
@@ -402,7 +424,7 @@ public class P extends JavaPlugin implements Listener
 		EntityType mob = e.getEntityType();
 		LivingEntity ent = e.getEntity();
 		if (mob != null) {
-			List<effect> efflist = (List)this.affect.get(mob);
+			List<effect> efflist = (List) this.affect.get(mob);
 			if (efflist != null) {
 				int i = 0;
 				int selected = this.random.nextInt(10000);
@@ -426,7 +448,7 @@ public class P extends JavaPlugin implements Listener
 	public void onMobDeath(EntityDeathEvent e) {
 		EntityType mob = e.getEntityType();
 		if (mob != null) {
-			Integer p = (Integer)this.respawn.get(mob);
+			Integer p = (Integer) this.respawn.get(mob);
 			if ((p != null) && (p.intValue() > this.random.nextInt(10000))) {
 				final LivingEntity ent = e.getEntity();
 				final Vector vel = ent.getVelocity();
@@ -443,8 +465,8 @@ public class P extends JavaPlugin implements Listener
 
 	@EventHandler
 	public void onEntityExplode(EntityExplodeEvent event) {
-//		Location l = event.getLocation();
-//		World world = l.getWorld();
+		// Location l = event.getLocation();
+		// World world = l.getWorld();
 		Entity ent = event.getEntity();
 
 		if (ent instanceof Creeper) {
@@ -454,7 +476,7 @@ public class P extends JavaPlugin implements Listener
 			}
 		} else {
 			// unhandled entity
-			//event.setCancelled(true);
+			// event.setCancelled(true);
 			return;
 		}
 	}
@@ -470,17 +492,18 @@ public class P extends JavaPlugin implements Listener
 		Entity ent = e.getEntity();
 		// Entity carrier = ent.getVehicle();
 		// if (carrier != null) {
-		// 	// getLogger().info("[EntityRemoveFromWorldEvent]: " + e.toString() + " " + carrier.toString());
-		// 	if (carrier.hasMetadata("PotionMonster-Carrier")) {
-		// 		pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
-		// 			public void run() {
-		// 				carrier.remove();
-		// 			}
-		// 		}, 4L);
-		// 	}
-		// 	// if (carrier instanceof Bee) {
-		// 	// 	carrier.remove();
-		// 	// }
+		// // getLogger().info("[EntityRemoveFromWorldEvent]: " + e.toString() + " " +
+		// carrier.toString());
+		// if (carrier.hasMetadata("PotionMonster-Carrier")) {
+		// pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
+		// public void run() {
+		// carrier.remove();
+		// }
+		// }, 4L);
+		// }
+		// // if (carrier instanceof Bee) {
+		// // carrier.remove();
+		// // }
 		// }
 		// UUID entUUID = ent.getUniqueId();
 		// UUID carrierUUID = this.track.get(entUUID);
@@ -489,7 +512,7 @@ public class P extends JavaPlugin implements Listener
 			pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
 				public void run() {
 					final Server server = Bukkit.getServer();
-					final LivingEntity carrier = (LivingEntity)server.getEntity(carrierUUID);
+					final LivingEntity carrier = (LivingEntity) server.getEntity(carrierUUID);
 					if (carrier == null) {
 						return;
 					}
@@ -501,32 +524,37 @@ public class P extends JavaPlugin implements Listener
 
 		// TargetChan tchan = this.track.get(ent);
 		// if (tchan != null) {
-		// 	//tchan.Carrier.remove(); // this cause java.util.ConcurrentModificationException
-		// 	pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
-		// 		public void run() {
-		// 			tchan.Carrier.remove();
-		// 		}
-		// 	}, 4L);
-		// 	this.track.remove(ent);
+		// //tchan.Carrier.remove(); // this cause
+		// java.util.ConcurrentModificationException
+		// pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
+		// public void run() {
+		// tchan.Carrier.remove();
 		// }
-		//this.trackCarrier.remove(ent);
+		// }, 4L);
+		// this.track.remove(ent);
+		// }
+		// this.trackCarrier.remove(ent);
 	}
+
 	@EventHandler
-	//public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
+	// public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
 	public void onEntityTargetEvent(EntityTargetEvent e) {
 		Entity ent = e.getEntity();
-		/*Entity carrier = ent.getVehicle();
-		if (carrier != null) {
-//getLogger().info("[EntityTargetEvent]: " + e.toString() + " " + carrier.toString());
-			if (carrier instanceof Bee) {
-				LivingEntity target = ((Mob) ent).getTarget();
-				((Mob) carrier).setTarget(target);
-			}
-		}*/
-		//TargetChan tchan = this.track.get(ent);
-		//if (tchan != null) {
-		//	tchan.update();
-		//}
+		/*
+		 * Entity carrier = ent.getVehicle();
+		 * if (carrier != null) {
+		 * //getLogger().info("[EntityTargetEvent]: " + e.toString() + " " +
+		 * carrier.toString());
+		 * if (carrier instanceof Bee) {
+		 * LivingEntity target = ((Mob) ent).getTarget();
+		 * ((Mob) carrier).setTarget(target);
+		 * }
+		 * }
+		 */
+		// TargetChan tchan = this.track.get(ent);
+		// if (tchan != null) {
+		// tchan.update();
+		// }
 
 		// if (ent.hasMetadata("PotionMonster-Carrier")) {
 		if (hasCarrier(ent)) {
@@ -538,30 +566,34 @@ public class P extends JavaPlugin implements Listener
 			e.setCancelled(true);
 		}
 
-		/*tchan = this.trackCarrier.get(ent);
-		if (tchan != null) {
-			//e.setCancelled(true);
-			tchan.reset();
-		}*/
+		/*
+		 * tchan = this.trackCarrier.get(ent);
+		 * if (tchan != null) {
+		 * //e.setCancelled(true);
+		 * tchan.reset();
+		 * }
+		 */
 	}
-	/*public void updateTarget() {
-		this.track.forEach((ent, tchan) -> {
-			if (tchan == null) {
-				return;
-			}
-			tchan.update();
-		});
-	}*/
+	/*
+	 * public void updateTarget() {
+	 * this.track.forEach((ent, tchan) -> {
+	 * if (tchan == null) {
+	 * return;
+	 * }
+	 * tchan.update();
+	 * });
+	 * }
+	 */
 
 	@EventHandler
 	public void onEntityDismountEvent(EntityDismountEvent e) {
 		Entity ent = e.getEntity();
 		Entity entDe = e.getDismounted();
 		// if (ent.hasMetadata("PotionMonster-Carrier")) {
-		// 	e.setCancelled(true);
+		// e.setCancelled(true);
 		// }
 		// if (entDe.hasMetadata("PotionMonster-Carrier")) {
-		// 	e.setCancelled(true);
+		// e.setCancelled(true);
 		// }
 		if (hasCarrier(ent) || hasCarrier(entDe)) {
 			e.setCancelled(true);
@@ -574,10 +606,12 @@ public class P extends JavaPlugin implements Listener
 			dataHolder = (PersistentDataHolder) ent;
 		} catch (ClassCastException e) {
 		}
-		if (dataHolder == null) return false;
+		if (dataHolder == null)
+			return false;
 		PersistentDataContainer dc = dataHolder.getPersistentDataContainer();
 		Integer carr = dc.getOrDefault(nKey.get("carrier"), PersistentDataType.INTEGER, null);
-		if (carr == null) return false;
+		if (carr == null)
+			return false;
 		return true;
 	}
 
@@ -587,7 +621,8 @@ public class P extends JavaPlugin implements Listener
 			dataHolder = (PersistentDataHolder) ent;
 		} catch (ClassCastException e) {
 		}
-		if (dataHolder == null) return null;
+		if (dataHolder == null)
+			return null;
 		PersistentDataContainer dc = dataHolder.getPersistentDataContainer();
 		return dc.getOrDefault(nKey.get("uuid"), new UUIDTagType(), null);
 	}
@@ -642,13 +677,15 @@ public class P extends JavaPlugin implements Listener
 			this.Passenger = passenger;
 		}
 
-		/*public void update() {
-			this.Target = this.Passenger.getTarget();
-			this.Carrier.setTarget(this.Target);
-		}
-		public void reset() {
-			this.Carrier.setTarget(this.Target);
-		}*/
+		/*
+		 * public void update() {
+		 * this.Target = this.Passenger.getTarget();
+		 * this.Carrier.setTarget(this.Target);
+		 * }
+		 * public void reset() {
+		 * this.Carrier.setTarget(this.Target);
+		 * }
+		 */
 	}
 
 	public class UUIDTagType implements PersistentDataType<byte[], UUID> {
@@ -679,4 +716,3 @@ public class P extends JavaPlugin implements Listener
 		}
 	}
 }
-
