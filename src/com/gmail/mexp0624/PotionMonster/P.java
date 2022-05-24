@@ -1,7 +1,6 @@
 package com.gmail.mexp0624.PotionMonster;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,13 +17,11 @@ import org.bukkit.World;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
-import org.bukkit.entity.Monster;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Bee;
@@ -34,14 +31,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
 import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -56,18 +50,11 @@ public class P extends JavaPlugin implements Listener {
 	Logger logger = getLogger();
 	FileConfiguration config;
 	Random random = new Random();
-	ConcurrentHashMap<EntityType, List<effect>> affect = new ConcurrentHashMap();
-	ConcurrentHashMap<EntityType, Integer> respawn = new ConcurrentHashMap();
+	ConcurrentHashMap<EntityType, List<effect>> affect = new ConcurrentHashMap<>();
+	ConcurrentHashMap<EntityType, Integer> respawn = new ConcurrentHashMap<>();
 
 	// NamespacedKeys for PersistentDataContainer
 	private final Map<String, NamespacedKey> nKey = new HashMap<>();
-
-	// List<TargetChan> track = new ArrayList(); // wait for setable AI
-	// ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); //
-	// wait for setable AI
-	// ConcurrentHashMap<Entity, TargetChan> trackCarrier = new ConcurrentHashMap();
-	// // wait for setable AI
-	ConcurrentHashMap<UUID, UUID> track = new ConcurrentHashMap(); // passengerUUID, carrierUUID
 
 	public P() {
 		nKey.put("uuid", new NamespacedKey(this, "uuid"));
@@ -77,28 +64,13 @@ public class P extends JavaPlugin implements Listener {
 	public void onEnable() {
 		pl = this;
 		Bukkit.getPluginManager().registerEvents(this, this);
-
 		loadConfig();
-		// readFlyer();
-
-		/*
-		 * Bukkit.getServer().getScheduler().runTaskTimer(this, new Runnable() {
-		 * 
-		 * @Override
-		 * public void run() {
-		 * updateTarget();
-		 * }
-		 * }, 20, 10);
-		 */
 	}
 
 	public void onDisable() {
 		HandlerList.unregisterAll((org.bukkit.plugin.java.JavaPlugin) pl);
 		this.affect.clear();
 		this.respawn.clear();
-
-		// saveFlyer(); // save first
-		// this.track.clear();
 	}
 
 	// command
@@ -133,73 +105,6 @@ public class P extends JavaPlugin implements Listener {
 		return false;
 	}
 
-	public void saveFlyer() {
-		File cacheFd = new File(getDataFolder(), "cache.yml");
-		YamlConfiguration list = new YamlConfiguration();
-
-		List<String> outlist = new ArrayList<>();
-		// this.track.forEach((ent, tchan) -> {
-		// if (tchan == null) {
-		// return;
-		// }
-
-		// final LivingEntity carrier = tchan.Carrier;
-		// final LivingEntity passenger = tchan.Passenger;
-		// if (carrier == null) {
-		// return;
-		// }
-		// if (passenger == null) {
-		// return;
-		// }
-		// outlist.add(String.format("%s:%s", carrier.getUniqueId(),
-		// passenger.getUniqueId()));
-		// });
-		this.track.forEach((passengerUUID, carrierUUID) -> {
-			if (carrierUUID == null) {
-				return;
-			}
-			outlist.add(String.format("%s:%s", passengerUUID, carrierUUID));
-		});
-		list.set("UUID", outlist);
-
-		try {
-			list.save(cacheFd);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void readFlyer() {
-		File cacheFd = new File(getDataFolder(), "cache.yml");
-		if (!cacheFd.exists()) {
-			return;
-		}
-		YamlConfiguration list = YamlConfiguration.loadConfiguration(cacheFd);
-		List<String> uuidList = list.getStringList("UUID");
-
-		Server server = Bukkit.getServer();
-
-		for (String argv : uuidList) {
-			String[] args = argv.split(":");
-			if (args.length != 2)
-				continue;
-
-			UUID passengerUUID = UUID.fromString(args[0]);
-			UUID carrierUUID = UUID.fromString(args[1]);
-			final LivingEntity passenger = (LivingEntity) server.getEntity(passengerUUID);
-			final LivingEntity carrier = (LivingEntity) server.getEntity(carrierUUID);
-			if (passenger == null) {
-				continue;
-			}
-			if (carrier == null) {
-				continue;
-			}
-			// this.track.put(passenger, new TargetChan((LivingEntity)carrier,
-			// (LivingEntity)passenger));
-			this.track.put(passengerUUID, carrierUUID);
-		}
-	}
-
 	public void loadConfig() {
 		reloadConfig();
 		File configFile = new File(getDataFolder(), "config.yml");
@@ -225,7 +130,7 @@ public class P extends JavaPlugin implements Listener {
 
 	List<effect> parseList(String mobName) {
 		List<String> tmplist = this.config.getStringList(mobName + ".conf");
-		List<effect> mobEff = new ArrayList();
+		List<effect> mobEff = new ArrayList<>();
 		for (String tmp : tmplist) {
 			effect eff = parseLine(tmp);
 			if (eff != null) {
@@ -316,6 +221,7 @@ public class P extends JavaPlugin implements Listener {
 				case ELDER_GUARDIAN:
 					val = true;
 					break;
+				default:
 			}
 		} else if (type == '1') { // force change
 			val = true;
@@ -424,7 +330,7 @@ public class P extends JavaPlugin implements Listener {
 		EntityType mob = e.getEntityType();
 		LivingEntity ent = e.getEntity();
 		if (mob != null) {
-			List<effect> efflist = (List) this.affect.get(mob);
+			List<effect> efflist = (List<effect>) this.affect.get(mob);
 			if (efflist != null) {
 				int i = 0;
 				int selected = this.random.nextInt(10000);
@@ -540,23 +446,6 @@ public class P extends JavaPlugin implements Listener {
 	// public void onEntityTargetLivingEntity(EntityTargetLivingEntityEvent e) {
 	public void onEntityTargetEvent(EntityTargetEvent e) {
 		Entity ent = e.getEntity();
-		/*
-		 * Entity carrier = ent.getVehicle();
-		 * if (carrier != null) {
-		 * //getLogger().info("[EntityTargetEvent]: " + e.toString() + " " +
-		 * carrier.toString());
-		 * if (carrier instanceof Bee) {
-		 * LivingEntity target = ((Mob) ent).getTarget();
-		 * ((Mob) carrier).setTarget(target);
-		 * }
-		 * }
-		 */
-		// TargetChan tchan = this.track.get(ent);
-		// if (tchan != null) {
-		// tchan.update();
-		// }
-
-		// if (ent.hasMetadata("PotionMonster-Carrier")) {
 		if (hasCarrier(ent)) {
 			if (ent instanceof Bee) {
 				Bee bee = (Bee) ent;
@@ -565,36 +454,13 @@ public class P extends JavaPlugin implements Listener {
 			}
 			e.setCancelled(true);
 		}
-
-		/*
-		 * tchan = this.trackCarrier.get(ent);
-		 * if (tchan != null) {
-		 * //e.setCancelled(true);
-		 * tchan.reset();
-		 * }
-		 */
 	}
-	/*
-	 * public void updateTarget() {
-	 * this.track.forEach((ent, tchan) -> {
-	 * if (tchan == null) {
-	 * return;
-	 * }
-	 * tchan.update();
-	 * });
-	 * }
-	 */
+
 
 	@EventHandler
 	public void onEntityDismountEvent(EntityDismountEvent e) {
 		Entity ent = e.getEntity();
 		Entity entDe = e.getDismounted();
-		// if (ent.hasMetadata("PotionMonster-Carrier")) {
-		// e.setCancelled(true);
-		// }
-		// if (entDe.hasMetadata("PotionMonster-Carrier")) {
-		// e.setCancelled(true);
-		// }
 		if (hasCarrier(ent) || hasCarrier(entDe)) {
 			e.setCancelled(true);
 		}
@@ -659,33 +525,12 @@ public class P extends JavaPlugin implements Listener {
 			this.P = P;
 			this.type = type;
 			this.fly = fly;
-			this.eff = new ArrayList();
+			this.eff = new ArrayList<>();
 		}
 
 		public void add(PotionEffect ef) {
 			this.eff.add(ef);
 		}
-	}
-
-	static class TargetChan {
-		public final LivingEntity Carrier;
-		public final LivingEntity Passenger;
-		public LivingEntity Target;
-
-		TargetChan(LivingEntity carrier, LivingEntity passenger) {
-			this.Carrier = carrier;
-			this.Passenger = passenger;
-		}
-
-		/*
-		 * public void update() {
-		 * this.Target = this.Passenger.getTarget();
-		 * this.Carrier.setTarget(this.Target);
-		 * }
-		 * public void reset() {
-		 * this.Carrier.setTarget(this.Target);
-		 * }
-		 */
 	}
 
 	public class UUIDTagType implements PersistentDataType<byte[], UUID> {
