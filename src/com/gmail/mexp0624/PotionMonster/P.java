@@ -2,8 +2,10 @@ package com.gmail.mexp0624.PotionMonster;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Random;
@@ -43,6 +45,11 @@ import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.persistence.PersistentDataHolder;
+import org.bukkit.persistence.PersistentDataAdapterContext;
 
 public class P extends JavaPlugin implements Listener
 {
@@ -53,17 +60,25 @@ public class P extends JavaPlugin implements Listener
 	ConcurrentHashMap<EntityType, List<effect>> affect = new ConcurrentHashMap();
 	ConcurrentHashMap<EntityType, Integer> respawn = new ConcurrentHashMap();
 
+	// NamespacedKeys for PersistentDataContainer
+	private final Map<String, NamespacedKey> nKey = new HashMap<>();
+
 	// List<TargetChan> track = new ArrayList(); // wait for setable AI
 	// ConcurrentHashMap<Entity, TargetChan> track = new ConcurrentHashMap(); // wait for setable AI
 	//ConcurrentHashMap<Entity, TargetChan> trackCarrier = new ConcurrentHashMap(); // wait for setable AI
 	ConcurrentHashMap<UUID, UUID> track = new ConcurrentHashMap(); // passengerUUID, carrierUUID
+
+	public P() {
+		nKey.put("uuid", new NamespacedKey(this, "uuid"));
+		nKey.put("carrier", new NamespacedKey(this, "carrier"));
+	}
 
 	public void onEnable() {
 		pl = this;
 		Bukkit.getPluginManager().registerEvents(this, this);
 
 		loadConfig();
-		readFlyer();
+		// readFlyer();
 
 		/*Bukkit.getServer().getScheduler().runTaskTimer(this, new Runnable() {
 			@Override
@@ -78,8 +93,8 @@ public class P extends JavaPlugin implements Listener
 		this.affect.clear();
 		this.respawn.clear();
 
-		saveFlyer(); // save first
-		this.track.clear();
+		// saveFlyer(); // save first
+		// this.track.clear();
 	}
 
 	// command
@@ -373,9 +388,13 @@ public class P extends JavaPlugin implements Listener
 		bat.addPassenger(ent);
 		bat.setTarget(((Mob)ent).getTarget());
 
-		this.track.put(ent.getUniqueId(), bat.getUniqueId());
+		// this.track.put(ent.getUniqueId(), bat.getUniqueId());
 		// this.track.put(ent, new TargetChan((LivingEntity)bat, (LivingEntity)ent));
 		//this.trackCarrier.put(bat, new TargetChan((Mob)bat, (Mob)ent));
+
+		// bind two-way
+		setCarrier(bat, ent);
+		setCarrier(ent, bat);
 	}
 
 	@EventHandler
@@ -463,8 +482,9 @@ public class P extends JavaPlugin implements Listener
 		// 	// 	carrier.remove();
 		// 	// }
 		// }
-		UUID entUUID = ent.getUniqueId();
-		UUID carrierUUID = this.track.get(entUUID);
+		// UUID entUUID = ent.getUniqueId();
+		// UUID carrierUUID = this.track.get(entUUID);
+		UUID carrierUUID = getCarrier(ent);
 		if (carrierUUID != null) {
 			pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
 				public void run() {
@@ -476,7 +496,7 @@ public class P extends JavaPlugin implements Listener
 					carrier.remove();
 				}
 			}, 4L);
-			this.track.remove(entUUID);
+			// this.track.remove(entUUID);
 		}
 
 		// TargetChan tchan = this.track.get(ent);
@@ -508,7 +528,8 @@ public class P extends JavaPlugin implements Listener
 		//	tchan.update();
 		//}
 
-		if (ent.hasMetadata("PotionMonster-Carrier")) {
+		// if (ent.hasMetadata("PotionMonster-Carrier")) {
+		if (hasCarrier(ent)) {
 			if (ent instanceof Bee) {
 				Bee bee = (Bee) ent;
 				bee.setAnger(0);
@@ -536,12 +557,61 @@ public class P extends JavaPlugin implements Listener
 	public void onEntityDismountEvent(EntityDismountEvent e) {
 		Entity ent = e.getEntity();
 		Entity entDe = e.getDismounted();
-		if (ent.hasMetadata("PotionMonster-Carrier")) {
+		// if (ent.hasMetadata("PotionMonster-Carrier")) {
+		// 	e.setCancelled(true);
+		// }
+		// if (entDe.hasMetadata("PotionMonster-Carrier")) {
+		// 	e.setCancelled(true);
+		// }
+		if (hasCarrier(ent) || hasCarrier(entDe)) {
 			e.setCancelled(true);
 		}
-		if (entDe.hasMetadata("PotionMonster-Carrier")) {
-			e.setCancelled(true);
+	}
+
+	protected boolean hasCarrier(Entity ent) {
+		PersistentDataHolder dataHolder = null;
+		try {
+			dataHolder = (PersistentDataHolder) ent;
+		} catch (ClassCastException e) {
 		}
+		if (dataHolder == null) return false;
+		PersistentDataContainer dc = dataHolder.getPersistentDataContainer();
+		Integer carr = dc.getOrDefault(nKey.get("carrier"), PersistentDataType.INTEGER, null);
+		if (carr == null) return false;
+		return true;
+	}
+
+	protected UUID getCarrier(Entity ent) {
+		PersistentDataHolder dataHolder = null;
+		try {
+			dataHolder = (PersistentDataHolder) ent;
+		} catch (ClassCastException e) {
+		}
+		if (dataHolder == null) return null;
+		PersistentDataContainer dc = dataHolder.getPersistentDataContainer();
+		return dc.getOrDefault(nKey.get("uuid"), new UUIDTagType(), null);
+	}
+
+	protected boolean setCarrier(Entity carrier, Entity passenger) {
+		PersistentDataHolder dataHolder = null;
+		try {
+			dataHolder = (PersistentDataHolder) passenger;
+		} catch (ClassCastException e) {
+		}
+		if (dataHolder != null) {
+			PersistentDataContainer dc = dataHolder.getPersistentDataContainer();
+			// dc.set(nKey.get("uuid"), PersistentDataType.STRING, uuid.toString());
+			dc.set(nKey.get("uuid"), new UUIDTagType(), carrier.getUniqueId());
+			dc.set(nKey.get("carrier"), PersistentDataType.INTEGER, 0x01);
+			return true;
+		}
+		return false;
+	}
+
+	public boolean clear(PersistentDataContainer dc) {
+		dc.remove(nKey.get("uuid"));
+		dc.remove(nKey.get("carrier"));
+		return true;
 	}
 
 	static class effect {
@@ -579,6 +649,34 @@ public class P extends JavaPlugin implements Listener
 		public void reset() {
 			this.Carrier.setTarget(this.Target);
 		}*/
+	}
+
+	public class UUIDTagType implements PersistentDataType<byte[], UUID> {
+		@Override
+		public Class<byte[]> getPrimitiveType() {
+			return byte[].class;
+		}
+
+		@Override
+		public Class<UUID> getComplexType() {
+			return UUID.class;
+		}
+
+		@Override
+		public byte[] toPrimitive(UUID uuid, PersistentDataAdapterContext context) {
+			ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+			bb.putLong(uuid.getMostSignificantBits());
+			bb.putLong(uuid.getLeastSignificantBits());
+			return bb.array();
+		}
+
+		@Override
+		public UUID fromPrimitive(byte[] primitive, PersistentDataAdapterContext context) {
+			ByteBuffer bb = ByteBuffer.wrap(primitive);
+			long firstLong = bb.getLong();
+			long secondLong = bb.getLong();
+			return new UUID(firstLong, secondLong);
+		}
 	}
 }
 

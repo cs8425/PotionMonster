@@ -4,7 +4,7 @@
     <groupId>com.gmail.mexp0624.PotionMonster</groupId>
     <artifactId>PotionMonster</artifactId>
     <name>PotionMonster</name>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
     <description>A plugin that add PotionEffect to Mobs.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
