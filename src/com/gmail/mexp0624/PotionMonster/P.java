@@ -451,11 +451,10 @@ public class P extends JavaPlugin implements Listener {
 				Bee bee = (Bee) ent;
 				bee.setAnger(0);
 				bee.setHasNectar(true);
+				e.setCancelled(true);
 			}
-			e.setCancelled(true);
 		}
 	}
-
 
 	@EventHandler
 	public void onEntityDismountEvent(EntityDismountEvent e) {
