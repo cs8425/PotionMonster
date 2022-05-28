@@ -341,6 +341,8 @@ public class P extends JavaPlugin implements Listener {
 			case IRON_SHOVEL:
 			case CARROT:
 			case POTATO:
+			case IRON_INGOT:
+			case IRON_SWORD:
 			case BONE:
 			case BOW:
 			case ARROW:
@@ -349,6 +351,7 @@ public class P extends JavaPlugin implements Listener {
 			case SPIDER_EYE:
 			case STRING:
 			case GUNPOWDER:
+			case GLOW_INK_SAC:
 			case CHICKEN:
 			case EGG:
 			case FEATHER:
