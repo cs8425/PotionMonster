@@ -18,6 +18,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -31,6 +32,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -198,10 +200,11 @@ public class P extends JavaPlugin implements Listener {
 		return out;
 	}
 
-	LivingEntity transType(LivingEntity ent, EntityType et, byte type, boolean fly) {
+	protected LivingEntity transType(LivingEntity ent, EntityType et, byte type, boolean fly) {
 		boolean val = false;
 		if (type == 'T') { // toggle
 			switch (et) {
+				case ZOMBIE_VILLAGER:
 				case ZOMBIE:
 				case DROWNED:
 				case HUSK:
@@ -234,6 +237,7 @@ public class P extends JavaPlugin implements Listener {
 		}
 
 		switch (et) {
+			case ZOMBIE_VILLAGER:
 			case ZOMBIE:
 			case DROWNED:
 			case HUSK:
@@ -272,6 +276,12 @@ public class P extends JavaPlugin implements Listener {
 					this.setFly(ent);
 		}
 		return ent;
+	}
+
+	protected void removePotionEffect(LivingEntity ent) {
+		for (PotionEffect fx : ent.getActivePotionEffects()) {
+			ent.removePotionEffect(fx.getType());
+		}
 	}
 
 	public void Respawn(LivingEntity ent, EntityType newType, boolean fly) {
@@ -323,6 +333,55 @@ public class P extends JavaPlugin implements Listener {
 		// bind two-way
 		setCarrier(bat, ent);
 		setCarrier(ent, bat);
+	}
+
+	protected boolean isMobDrop(Material mat) {
+		switch (mat) {
+			case ROTTEN_FLESH:
+			case IRON_SHOVEL:
+			case CARROT:
+			case POTATO:
+			case BONE:
+			case BOW:
+			case ARROW:
+			case STONE_SWORD:
+			case COAL:
+			case SPIDER_EYE:
+			case STRING:
+			case GUNPOWDER:
+			case CHICKEN:
+			case EGG:
+			case FEATHER:
+				return true;
+			default:
+		}
+		return false;
+	}
+
+	@EventHandler
+	public void onEntityPickupItem(EntityPickupItemEvent e) {
+		LivingEntity ent = e.getEntity();
+		switch (ent.getType()) {
+			case ZOMBIE_VILLAGER:
+			case ZOMBIE:
+			case DROWNED:
+			case HUSK:
+				if (ent.customName() != null)
+					return;
+				if (ent.getLocation().getY() >= 64)
+					return;
+				Material mat = e.getItem().getItemStack().getType();
+				if (isMobDrop(mat))
+					e.setCancelled(true);
+				break;
+			case SKELETON:
+				break;
+			case WITHER_SKELETON:
+				break;
+			case ZOMBIFIED_PIGLIN:
+			default:
+				return;
+		}
 	}
 
 	@EventHandler
@@ -384,12 +443,6 @@ public class P extends JavaPlugin implements Listener {
 			// unhandled entity
 			// event.setCancelled(true);
 			return;
-		}
-	}
-
-	public void removePotionEffect(LivingEntity ent) {
-		for (PotionEffect fx : ent.getActivePotionEffects()) {
-			ent.removePotionEffect(fx.getType());
 		}
 	}
 
