@@ -300,12 +300,14 @@ public class P extends JavaPlugin implements Listener {
 		final World ww = ent.getWorld();
 		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BAT);
 		Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.BEE);
+		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.ALLAY);
 		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PARROT);
 		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.PHANTOM);
 		// Mob bat = (Mob) ww.spawnEntity(ent.getLocation(), EntityType.VEX);
 		// bat.addAttributeModifier(Attribute.GENERIC_MAX_HEALTH, new
 		// AttributeModifier("hp", 20, AttributeModifier.Operation.ADD_NUMBER));
 		bat.setVelocity(vel);
+		bat.setSilent(true);
 		bat.addPotionEffect(
 				new PotionEffect(PotionEffectType.getByName("REGENERATION"), Integer.MAX_VALUE, 1, false, false));
 		bat.addPotionEffect(
