@@ -38,7 +38,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 import org.bukkit.event.entity.EntityTargetEvent;
-import org.spigotmc.event.entity.EntityDismountEvent;
+import org.bukkit.event.entity.EntityDismountEvent;
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.NamespacedKey;
@@ -425,7 +425,7 @@ public class P extends JavaPlugin implements Listener {
 
 				pl.getServer().getScheduler().scheduleSyncDelayedTask(pl, new Runnable() {
 					public void run() {
-						LivingEntity enty = ent.getWorld().spawn(ent.getLocation(), ent.getClass());
+						Entity enty = ent.getWorld().spawnEntity(ent.getLocation(), mob);
 						enty.setVelocity(vel);
 					}
 				}, 12L);
